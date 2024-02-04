@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: rgb(214, 214, 214);
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+        input{
+            border-radius: 5px;
+            
+        }
+        /*input fiels focus?
+        */  
+        input:focus {
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px;
+            border:none;
+        }
+        button {
+            cursor: pointer;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Management</h1>
+
+    <div id="app">
+        <button onclick="getStudents()">Get Students</button>
+
+        <h2>Create Student</h2>
+        <form onsubmit="createStudent(event)">
+            <label>Name:</label>
+            <input type="text" id="name" required>
+
+            <label>Course:</label>
+            <input type="text" id="course" required>
+
+            <label>Email:</label>
+            <input type="email" id="email" required>
+
+            <label>Phone:</label>
+            <input type="text" id="phone" required>
+
+            <button type="submit">Create Student</button>
+        </form>
+
+        <h2>Students List:</h2>
+        <ul id="studentsList"></ul>
+    </div>
+
+    <script>
+        const apiUrl = 'http://127.0.0.1:8000/api/students';
+
+        function getStudents() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const studentsList = document.getElementById('studentsList');
+                    studentsList.innerHTML = '';
+
+                    if (data.status === 200) {
+                        data.students.forEach(student => {
+                            const li = document.createElement('li');
+                            li.textContent = `${student.id} - ${student.name} - ${student.course} - ${student.email} - ${student.phone}`;
+
+                            const editButton = document.createElement('button');
+                            editButton.textContent = 'Edit';
+                            editButton.onclick = () => editStudent(student);
+
+                            const deleteButton = document.createElement('button');
+                            deleteButton.textContent = 'Delete';
+                            deleteButton.onclick = () => deleteStudent(student.id);
+
+                            li.appendChild(editButton);
+                            li.appendChild(deleteButton);
+
+                            studentsList.appendChild(li);
+                        });
+                    } else {
+                        alert('Error fetching students');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function createStudent(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const course = document.getElementById('course').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, course, email, phone }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    alert('Student created successfully');
+                    getStudents();
+                    resetForm();
+                } else {
+                    alert('Error creating student');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function editStudent(student) {
+            const { id, name, course, email, phone } = student;
+            
+            document.getElementById('name').value = name;
+            document.getElementById('course').value = course;
+            document.getElementById('email').value = email;
+            document.getElementById('phone').value = phone;
+
+            const updateButton = document.createElement('button');
+            updateButton.textContent = 'Update';
+            updateButton.onclick = () => updateStudent(id);
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.onclick = resetForm;
+
+            const form = document.querySelector('form');
+            form.appendChild(updateButton);
+            form.appendChild(cancelButton);
+        }
+
+        function updateStudent(id) {
+            const name = document.getElementById('name').value;
+            const course = document.getElementById('course').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+
+            fetch(`${apiUrl}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, course, email, phone }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    alert('Student updated successfully');
+                    getStudents();
+                    resetForm();
+                } else {
+                    alert('Error updating student');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function deleteStudent(id) {
+            fetch(`${apiUrl}/${id}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 200) {
+                    alert('Student deleted successfully');
+                    getStudents();
+                } else {
+                    alert('Error deleting student');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function resetForm() {
+            document.getElementById('name').value = '';
+            document.getElementById('course').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+
+            const form = document.querySelector('form');
+            form.reset();
+            form.removeChild(form.lastChild); // Remove Update button
+            form.removeChild(form.lastChild); // Remove Cancel button
+        }
+    </script>
+</body>
+</html>
